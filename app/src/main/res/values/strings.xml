@@ -37,4 +37,5 @@
     <string name="tv_unroot_tip">抖音自动化(手机未root)</string>
     <string name="tv_root_unauth">抖音自动化(手机已root但应用未获得root权限)</string>
     <string name="tv_root_tip">抖音自动化(手机已root)</string>
+    <string name="tv_added_index">已添加联系人：</string>
 </resources>

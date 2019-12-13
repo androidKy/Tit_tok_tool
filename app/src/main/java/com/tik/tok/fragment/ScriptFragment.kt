@@ -6,13 +6,11 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
+import com.safframework.log.L
 import com.tik.tok.Constant
 import com.tik.tok.R
 import com.tik.tok.base.BaseFragment
-import com.utils.common.PackageManagerUtils
-import com.utils.common.PermissionUtils
-import com.utils.common.SPUtils
-import com.utils.common.ToastUtils
+import com.utils.common.*
 
 /**
  * Description:自动化
@@ -42,6 +40,12 @@ class ScriptFragment : BaseFragment(), View.OnClickListener {
         super.onActivityCreated(savedInstanceState)
 
         initView()
+
+    }
+
+    override fun onStart() {
+        super.onStart()
+        initData()
     }
 
     private fun initView() {
@@ -62,15 +66,37 @@ class ScriptFragment : BaseFragment(), View.OnClickListener {
             mBTstart.setOnClickListener(this@ScriptFragment)
         }
 
-        initData()
     }
 
+
     private fun initData() {
-        if (PermissionUtils.isRoot()) {
-            if (PermissionUtils.getRootAuth())
-                mTVrootTip.text = getString(R.string.tv_root_tip)
-            else mTVrootTip.text = getString(R.string.tv_root_unauth)
-        } else mTVrootTip.text = getString(R.string.tv_unroot_tip)
+        var appRoot = false
+        var phoneRoot = false
+
+        ThreadUtils.executeByCached(object : ThreadUtils.Task<Boolean>() {
+            override fun doInBackground(): Boolean {
+                appRoot = PermissionUtils.getRootAuth(context!!)
+                phoneRoot = PermissionUtils.isRoot()
+                return phoneRoot && appRoot
+            }
+
+            override fun onSuccess(result: Boolean) {
+                if (result) {
+                    mTVrootTip.text = getString(R.string.tv_root_tip)
+                } else {
+                    if (phoneRoot)
+                        mTVrootTip.text = getString(R.string.tv_root_unauth)
+                    else mTVrootTip.text = getString(R.string.tv_unroot_tip)
+                }
+            }
+
+            override fun onCancel() {
+            }
+
+            override fun onFail(t: Throwable?) {
+                L.i("rootError:${t?.message}")
+            }
+        })
 
         SPUtils.getInstance(Constant.SP_AUTO_SCRIPT).run {
             mCBisLookVideo.isChecked = getBoolean(Constant.KEY_IS_LOOK_VIDEO)
@@ -126,16 +152,30 @@ class ScriptFragment : BaseFragment(), View.OnClickListener {
     }
 
     private fun startTikTok() {
-        if (!PermissionUtils.getRootAuth()) {
-            ToastUtils.showToast(context!!, context?.getString(R.string.tv_root_unauth)!!)
-            mBTstart.text = resources.getString(R.string.bt_start)
-            return
-        }
+        ThreadUtils.executeByCached(object : ThreadUtils.Task<Boolean>() {
+            override fun doInBackground(): Boolean {
+                return PermissionUtils.getRootAuth(context!!)
+            }
 
-        val intent = context?.packageManager?.getLaunchIntentForPackage(Constant.PKG_TIK_TOK)
-        intent?.apply {
-            context?.startActivity(this)
-        }
+            override fun onSuccess(result: Boolean) {
+                if (!result) {
+                    ToastUtils.showToast(context!!, context?.getString(R.string.tv_root_unauth)!!)
+                    mBTstart.text = resources.getString(R.string.bt_start)
+                } else {
+                    val intent =
+                        context?.packageManager?.getLaunchIntentForPackage(Constant.PKG_TIK_TOK)
+                    intent?.apply {
+                        context?.startActivity(this)
+                    }
+                }
+            }
+
+            override fun onCancel() {
+            }
+
+            override fun onFail(t: Throwable?) {
+            }
+        })
     }
 
     private fun stopTikTok() {

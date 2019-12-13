@@ -7,9 +7,11 @@ import android.os.Message
 import android.view.View
 import android.widget.*
 import com.safframework.log.L
+import com.tik.tok.Constant
 import com.tik.tok.R
 import com.tik.tok.base.BaseFragment
 import com.tik.tok.utils.ContactUtils
+import com.utils.common.SPUtils
 import com.utils.common.ThreadUtils
 import com.utils.common.ToastUtils
 import java.io.BufferedReader
@@ -22,6 +24,7 @@ import kotlin.random.Random
  **/
 class ContactFragment : BaseFragment(), View.OnClickListener {
 
+    private lateinit var mTVaddedIndex: TextView
     private lateinit var mRGoperate: RadioGroup
     private lateinit var mRBaddContact: RadioButton
     private lateinit var mTVtotalContacts: TextView
@@ -61,6 +64,7 @@ class ContactFragment : BaseFragment(), View.OnClickListener {
 
     private fun initView() {
         getFragmentView()?.run {
+            mTVaddedIndex = findViewById(R.id.tv_added_index)
             mRGoperate = findViewById(R.id.rg_operate)
             mETstartIndex = findViewById(R.id.et_start_index)
             mETendIndex = findViewById(R.id.et_end_index)
@@ -102,9 +106,23 @@ class ContactFragment : BaseFragment(), View.OnClickListener {
         mETstartIndex.setSelection(mETstartIndex.text.length)
         mETendIndex.setSelection(mETendIndex.text.length)
 
+        loadIndex()
         loadConstactsCount()
 
         mRBcontactsMin.isChecked = true
+    }
+
+    private fun loadIndex() {
+        val startIndex =
+            SPUtils.getInstance(Constant.SP_CONTACTS).getInt(Constant.KEY_START_INDEX, 0)
+        val endIndex = SPUtils.getInstance(Constant.SP_CONTACTS).getInt(Constant.KEY_END_INDEX, 0)
+
+        if (startIndex == 0 && endIndex == 0) {
+            mTVaddedIndex.text = getString(R.string.tv_added_index) + "0"
+        } else {
+            mTVaddedIndex.text =
+                getString(R.string.tv_added_index) + startIndex + "-" + endIndex + "=" + (endIndex - startIndex)
+        }
     }
 
     private fun loadConstactsCount() {
@@ -135,6 +153,11 @@ class ContactFragment : BaseFragment(), View.OnClickListener {
             }
 
         })
+    }
+
+    private fun addAphone() {
+        ContactUtils.addContacts(context!!, "10G-A01", "13380085914")
+        ContactUtils.addContacts(context!!, "10G-A02", "13316028946")
     }
 
     override fun onClick(v: View?) {
@@ -172,13 +195,32 @@ class ContactFragment : BaseFragment(), View.OnClickListener {
     }
 
     private val mHandler = Handler(Looper.getMainLooper()) {
-        if (it.what == 2000) mTVcount.text = it.arg1.toString()
-        else if (it.what == 20000) mBTstart.text = context?.resources?.getString(R.string.bt_start)
+        if (it.what == 2000) {  //添加联系人完成
+            mBTstart.text = context?.resources?.getString(R.string.bt_start)
+
+            mTVcount.text = it.arg1.toString()
+
+            SPUtils.getInstance(Constant.SP_CONTACTS).run {
+                put(Constant.KEY_START_INDEX, mETstartIndex.text.toString().toInt(), true)
+                put(Constant.KEY_END_INDEX, mETendIndex.text.toString().toInt(), true)
+            }
+
+            loadIndex()
+
+            if (mRBcontactsMiddle.isChecked)
+                addAphone()
+        } else if (it.what == 20000) {  //删除联系人完成
+            mBTstart.text = context?.resources?.getString(R.string.bt_start)
+
+            SPUtils.getInstance(Constant.SP_CONTACTS).clear()
+
+            loadIndex()
+        }
         false
     }
 
     @Synchronized
-    private fun addContact()  {
+    private fun addContact() {
         if (mStarted) {
             ToastUtils.showToast(context!!, "正在添加...")
             return

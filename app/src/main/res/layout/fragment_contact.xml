@@ -9,6 +9,19 @@
         android:layout_height="wrap_content"
         android:textSize="@dimen/sp_18"
         android:text="@string/tv_contacts"/>-->
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/tv_added_index"
+            android:textSize="@dimen/sp_18"
+            android:textColor="@android:color/holo_red_light"
+            android:layout_width="wrap_content"
+            android:text="@string/tv_added_index"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
     <RadioGroup
         android:id="@+id/rg_operate"
         android:orientation="horizontal"

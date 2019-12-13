@@ -11,6 +11,10 @@ interface Constant {
         const val PKG_PDD = "com.xunmeng.pinduoduo"
 
         const val SP_AUTO_SCRIPT = "script_auto_sp"
+        const val SP_CONTACTS = "contacts_sp"
+
+        const val KEY_START_INDEX = "start_index"
+        const val KEY_END_INDEX = "end_index"
 
         const val KEY_STAY_TIME = "stay_time"   //视频停留时间
         const val KEY_LOOK_TIME = "look_time"   //视频浏览多久

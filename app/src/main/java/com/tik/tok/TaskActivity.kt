@@ -16,6 +16,7 @@ import com.tik.tok.fragment.ScriptFragment
 import com.tik.tok.viewmodel.MainPresenterImpl
 import com.tik.tok.viewmodel.MainViewPresenter
 import com.utils.common.PermissionUtils
+import com.utils.common.ThreadUtils
 import com.utils.common.ToastUtils
 
 class TaskActivity : AppCompatActivity(), View.OnClickListener, MainViewPresenter.MainView {
@@ -36,6 +37,11 @@ class TaskActivity : AppCompatActivity(), View.OnClickListener, MainViewPresente
         initFragment()
 
         mPresenter = MainPresenterImpl(this, this)
+
+    }
+
+    override fun onStart() {
+        super.onStart()
 
         requestPermissions()
     }
@@ -72,15 +78,18 @@ class TaskActivity : AppCompatActivity(), View.OnClickListener, MainViewPresente
         showFragment(mScriptFragment)
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
     private fun showFragment(fragment: BaseFragment) {
         val hideFragment: Fragment = if (fragment is ScriptFragment) {
-            mTVscriptItem.setTextColor(resources.getColor(R.color.red, theme))
-            mTVcontactItem.setTextColor(resources.getColor(R.color.gray, theme))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                mTVscriptItem.setTextColor(resources.getColor(R.color.red, theme))
+                mTVcontactItem.setTextColor(resources.getColor(R.color.gray, theme))
+            }
             mContactFragment
         } else {
-            mTVscriptItem.setTextColor(resources.getColor(R.color.gray, theme))
-            mTVcontactItem.setTextColor(resources.getColor(R.color.red, theme))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                mTVscriptItem.setTextColor(resources.getColor(R.color.gray, theme))
+                mTVcontactItem.setTextColor(resources.getColor(R.color.red, theme))
+            }
             mScriptFragment
         }
 
@@ -108,9 +117,26 @@ class TaskActivity : AppCompatActivity(), View.OnClickListener, MainViewPresente
     }
 
     override fun onPermissionGranted(result: Boolean) {
-        if (result && PermissionUtils.isRoot()) {
-            mPresenter?.openAccessibility()
-        } else ToastUtils.showToast(this, "授权失败")
+        mTVcontactItem.postDelayed(Runnable {
+            ThreadUtils.executeByCached(object : ThreadUtils.Task<Boolean>() {
+                override fun doInBackground(): Boolean {
+                    return PermissionUtils.isRoot()
+                }
+
+                override fun onSuccess(rootResult: Boolean) {
+                    if (result && rootResult) {
+                        mPresenter?.openAccessibility()
+                    } else ToastUtils.showToast(this@TaskActivity, "授权失败")
+                }
+
+                override fun onCancel() {
+                }
+
+                override fun onFail(t: Throwable?) {
+                }
+            })
+        },1000)
+
     }
 
     override fun onAccessibilityOpened(result: Boolean) {

@@ -38,7 +38,7 @@ class MainPresenterImpl(val view: MainViewPresenter.MainView, val context: Conte
     }
 
     override fun openAccessibility() {
-        if(!PermissionUtils.getRootAuth())
+        if(!PermissionUtils.getRootAuth(context))
         {
             view.onAccessibilityOpened(false)
             return

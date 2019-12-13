@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
 import android.provider.Settings;
 
 import androidx.annotation.NonNull;
@@ -22,6 +23,7 @@ import android.view.WindowManager;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 
@@ -57,25 +59,44 @@ public final class PermissionUtils {
      *
      * @return true:phone was rooted otherwise
      */
-    public static synchronized boolean isRoot() {
+    public static boolean isRoot() {
         Process process = null;
+        BufferedReader in = null;
         try {
             //   /system/xbin/which 或者  /system/bin/which
-            process = Runtime.getRuntime().exec(new String[]{"which", "su"});
-            BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            //process = Runtime.getRuntime().exec(new String[]{"which", "su"});
+            ProcessBuilder pb = new ProcessBuilder("su");
+            pb.redirectErrorStream(true);
+            process = pb.start();
+            in = new BufferedReader(new InputStreamReader(process.getInputStream()));
             return in.readLine() != null;
         } catch (Throwable t) {
             return false;
         } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
             if (process != null) process.destroy();
         }
     }
 
-    public static synchronized boolean getRootAuth() {
-        Process process = null;
+    public static boolean getRootAuth(Context context) {
+        String result = new CMDUtil().execCmd(
+                "pm grant " + context.getPackageName() + " android.permission.WRITE_SECURE_SETTINGS;"
+        );
+        return result.contains("Success");
+       /* Process process = null;
         DataOutputStream os = null;
         try {
-            process = Runtime.getRuntime().exec("su");
+            //process = Runtime.getRuntime().exec("su");
+            ProcessBuilder pb = new ProcessBuilder("su");
+            pb.redirectErrorStream(true);
+            process = pb.start();
+
             os = new DataOutputStream(process.getOutputStream());
             os.writeBytes("exit\n");
             os.flush();
@@ -88,12 +109,15 @@ public final class PermissionUtils {
                 if (os != null) {
                     os.close();
                 }
-                if (process != null)
+                if (process != null) {
+                    process.exitValue();
                     process.destroy();
+                }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
+        }*/
     }
 
     /**
